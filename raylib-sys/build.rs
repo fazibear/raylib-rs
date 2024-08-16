@@ -131,7 +131,15 @@ fn build_with_cmake(src_path: &str) {
         Platform::Web => conf
             .define("PLATFORM", "Web")
             .define("CMAKE_C_FLAGS", "-s ASYNCIFY"),
-        Platform::RPI => conf.define("PLATFORM", "Raspberry Pi"),
+        Platform::RPI => {
+            println!("cargo:rustc-link-search=native=/opt/vc/lib");
+            println!("cargo:rustc-link-lib=brcmGLESv2");
+            println!("cargo:rustc-link-lib=brcmEGL");
+            println!("cargo:rustc-link-lib=bcm_host");
+            println!("cargo:rustc-link-lib=vchiq_arm");
+            println!("cargo:rustc-link-lib=vcos");
+            conf.define("PLATFORM", "DRM")
+        }
     };
 
     let dst = conf.build();
@@ -356,7 +364,9 @@ fn run_command(cmd: &str, args: &[&str]) {
 fn platform_from_target(target: &str) -> (Platform, PlatformOS) {
     let platform = if target.contains("wasm") {
         Platform::Web
-    } else if target.contains("armv7-unknown-linux") {
+    } else if target.contains("arm-unknown-linux-gnueabihf")
+        || target.contains("armv7-unknown-linux")
+    {
         Platform::RPI
     } else {
         Platform::Desktop
